@@ -5,7 +5,8 @@ import { supabase } from "../../../lib/supabase";
 import { Button } from "../../../components/ui/button";
 import { Input } from "../../../components/ui/input";
 import { Label } from "../../../components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle } from "../../../components/ui/card";
+import { Card, CardContent } from "../../../components/ui/card";
+import { Package, Image as ImageIcon, Edit2, Plus, UploadCloud, Box, Scissors } from "lucide-react";
 
 export default function InventarioPage() {
   const [productos, setProductos] = useState<any[]>([]);
@@ -24,7 +25,6 @@ export default function InventarioPage() {
       .from("products")
       .select("*")
       .order("created_at", { ascending: false });
-    
     if (data) setProductos(data);
   };
 
@@ -35,27 +35,21 @@ export default function InventarioPage() {
   const guardarProducto = async (e: React.FormEvent) => {
     e.preventDefault();
     setCargando(true);
-    
     let urlFinalImagen = imagenActualUrl;
 
     try {
-      // Si seleccionó un archivo nuevo, lo subimos a Supabase Storage
       if (archivoImagen) {
         const fileExt = archivoImagen.name.split('.').pop();
         const fileName = `${Date.now()}.${fileExt}`;
-        const filePath = `${fileName}`;
-
         const { error: uploadError } = await supabase.storage
           .from("productos")
-          .upload(filePath, archivoImagen, { upsert: true });
+          .upload(fileName, archivoImagen, { upsert: true });
 
-        if (uploadError) {
-          throw uploadError;
-        }
+        if (uploadError) throw uploadError;
 
         const { data: publicURLData } = supabase.storage
           .from("productos")
-          .getPublicUrl(filePath);
+          .getPublicUrl(fileName);
 
         urlFinalImagen = publicURLData.publicUrl;
       }
@@ -69,13 +63,9 @@ export default function InventarioPage() {
       };
 
       if (editandoId) {
-        const { error } = await supabase
-          .from("products")
-          .update(datosProducto)
-          .eq("id", editandoId);
-
+        const { error } = await supabase.from("products").update(datosProducto).eq("id", editandoId);
         if (error) throw error;
-        alert("¡Producto y foto actualizados con éxito!");
+        alert("¡Producto actualizado con éxito!");
       } else {
         const { error } = await supabase.from("products").insert([datosProducto]);
         if (error) throw error;
@@ -85,8 +75,7 @@ export default function InventarioPage() {
       limpiarFormulario();
       cargarProductos();
     } catch (error: any) {
-      console.error(error);
-      alert("Error al subir la imagen o guardar: " + (error.message || "Error desconocido"));
+      alert("Error al guardar: " + (error.message || "Error desconocido"));
     } finally {
       setCargando(false);
     }
@@ -103,153 +92,158 @@ export default function InventarioPage() {
   };
 
   const limpiarFormulario = () => {
-    setEditandoId(null);
-    setNombre("");
-    setPrecio("");
-    setStock("");
-    setArchivoImagen(null);
-    setImagenActualUrl("");
-    setTipo("physical");
+    setEditandoId(null); setNombre(""); setPrecio(""); setStock(""); 
+    setArchivoImagen(null); setImagenActualUrl(""); setTipo("physical");
   };
 
   return (
-    <div className="p-4 md:p-8 text-zinc-100">
-      <header className="mb-8">
-        <h1 className="text-3xl font-black text-amber-500">Gestión de Inventario y Fotos</h1>
-        <p className="text-zinc-400">Sube fotos reales desde tu dispositivo y gestiona tu catálogo.</p>
+    <div className="p-4 md:p-8 text-zinc-100 max-w-7xl mx-auto space-y-6">
+      <header className="space-y-2">
+        <h1 className="text-2xl md:text-3xl font-black text-amber-500 flex items-center gap-3">
+          <Package className="w-8 h-8" /> Inventario y Servicios
+        </h1>
+        <p className="text-sm md:text-base text-zinc-400">Gestiona tu catálogo y sube fotos reales de tus trabajos o productos.</p>
       </header>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Formulario */}
-        <Card className="bg-zinc-900 border-zinc-800 lg:col-span-1 h-fit shadow-xl">
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="text-zinc-200">
-              {editandoId ? "Editar Ítem" : "Nuevo Ítem"}
-            </CardTitle>
-            {editandoId && (
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={limpiarFormulario}
-                className="text-xs bg-zinc-800 border-zinc-700 text-zinc-300 hover:bg-zinc-700"
-              >
-                Cancelar
-              </Button>
-            )}
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={guardarProducto} className="space-y-4">
-              <div>
-                <Label className="text-zinc-400">Nombre</Label>
-                <Input required value={nombre} onChange={e => setNombre(e.target.value)} className="bg-zinc-950 border-zinc-700 text-white mt-1" placeholder="Ej: Cera Mate Gorilla" />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label className="text-zinc-400">Precio ($)</Label>
-                  <Input required type="number" step="0.01" value={precio} onChange={e => setPrecio(e.target.value)} className="bg-zinc-950 border-zinc-700 text-white mt-1" placeholder="0.00" />
-                </div>
-                <div>
-                  <Label className="text-zinc-400">Tipo</Label>
-                  <select value={tipo} onChange={e => setTipo(e.target.value)} className="w-full h-10 mt-1 px-3 rounded-md bg-zinc-950 border border-zinc-700 text-sm text-white">
-                    <option value="physical">Producto Físico</option>
-                    <option value="service">Servicio</option>
-                  </select>
-                </div>
-              </div>
-              {tipo === "physical" && (
-                <div>
-                  <Label className="text-zinc-400">Stock</Label>
-                  <Input required type="number" value={stock} onChange={e => setStock(e.target.value)} className="bg-zinc-950 border-zinc-700 text-white mt-1" placeholder="Cantidad" />
-                </div>
-              )}
-              
-              <div>
-                <Label className="text-zinc-400">Foto del Producto</Label>
-                {/* Input nativo de archivo para evitar bloqueos de UI */}
-                <input 
-                  type="file" 
-                  accept="image/*"
-                  onChange={e => {
-                    if (e.target.files && e.target.files[0]) {
-                      setArchivoImagen(e.target.files[0]);
-                    }
-                  }} 
-                  className="w-full mt-1 text-sm text-zinc-400 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-amber-600 file:text-white hover:file:bg-amber-700 cursor-pointer bg-zinc-950 border border-zinc-700 rounded-md p-1" 
-                />
-                {imagenActualUrl && !archivoImagen && (
-                  <div className="mt-2 flex items-center gap-2">
-                    <span className="text-xs text-zinc-400">Foto actual:</span>
-                    <img src={imagenActualUrl} alt="Miniatura" className="w-8 h-8 object-cover rounded border border-zinc-700" />
-                  </div>
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-8">
+        
+        {/* ================= FORMULARIO ================= */}
+        <div className="xl:col-span-4">
+          <Card className="bg-zinc-900/60 backdrop-blur-xl border-zinc-800/60 shadow-2xl rounded-3xl sticky top-4">
+            <CardContent className="p-6">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-lg font-bold text-zinc-100">
+                  {editandoId ? "Editar Ítem" : "Nuevo Ítem"}
+                </h2>
+                {editandoId && (
+                  <Button variant="ghost" size="sm" onClick={limpiarFormulario} className="text-xs text-zinc-400 hover:text-white">
+                    Cancelar
+                  </Button>
                 )}
               </div>
 
-              <Button type="submit" disabled={cargando} className="w-full bg-amber-600 hover:bg-amber-700 text-white font-bold mt-4">
-                {cargando ? "Subiendo imagen y guardando..." : editandoId ? "Actualizar Ítem" : "Guardar Ítem"}
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
+              <form onSubmit={guardarProducto} className="space-y-5">
+                <div>
+                  <Label className="text-zinc-400 text-xs ml-1">Nombre del producto/servicio</Label>
+                  <Input required value={nombre} onChange={e => setNombre(e.target.value)} className="bg-zinc-950 border-none text-white h-12 rounded-xl mt-1 focus:ring-1 focus:ring-amber-500" placeholder="Ej: Cera Mate Gorilla" />
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-zinc-400 text-xs ml-1">Precio ($)</Label>
+                    <Input required type="number" step="0.01" value={precio} onChange={e => setPrecio(e.target.value)} className="bg-zinc-950 border-none text-white h-12 rounded-xl mt-1 focus:ring-1 focus:ring-amber-500" placeholder="0.00" />
+                  </div>
+                  <div>
+                    <Label className="text-zinc-400 text-xs ml-1">Tipo</Label>
+                    <select value={tipo} onChange={e => setTipo(e.target.value)} className="w-full h-12 mt-1 px-3 rounded-xl bg-zinc-950 border-none text-sm text-white focus:ring-1 focus:ring-amber-500 appearance-none">
+                      <option value="physical">Físico</option>
+                      <option value="service">Servicio</option>
+                    </select>
+                  </div>
+                </div>
 
-        {/* Tabla del Catálogo */}
-        <Card className="bg-zinc-900 border-zinc-800 lg:col-span-2 shadow-xl">
-          <CardHeader>
-            <CardTitle className="text-zinc-200">Catálogo Actual</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="overflow-x-auto rounded-lg border border-zinc-800">
-              <table className="w-full text-sm text-left text-zinc-400">
-                <thead className="text-xs text-zinc-500 uppercase bg-zinc-950/50">
-                  <tr>
-                    <th className="px-4 py-4">Foto</th>
-                    <th className="px-4 py-4">Nombre</th>
-                    <th className="px-4 py-4">Tipo</th>
-                    <th className="px-4 py-4">Precio</th>
-                    <th className="px-4 py-4 text-center">Stock</th>
-                    <th className="px-4 py-4 text-center">Acción</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-zinc-800">
-                  {productos.map((prod) => (
-                    <tr key={prod.id} className="hover:bg-zinc-950/50 transition-colors">
-                      <td className="px-4 py-4">
-                        {prod.image_url ? (
-                          <img src={prod.image_url} alt={prod.name} className="w-12 h-12 object-cover rounded-md border border-zinc-700 shadow-sm" />
-                        ) : (
-                          <div className="w-12 h-12 bg-zinc-800 rounded-md flex items-center justify-center text-[10px] text-zinc-500">Sin foto</div>
-                        )}
-                      </td>
-                      <td className="px-4 py-4 text-zinc-200 font-medium">{prod.name}</td>
-                      <td className="px-4 py-4">
-                        <span className={`px-2 py-1 rounded text-xs font-semibold ${prod.type === 'physical' ? 'bg-blue-900/30 text-blue-400' : 'bg-purple-900/30 text-purple-400'}`}>
-                          {prod.type === 'physical' ? 'FÍSICO' : 'SERVICIO'}
-                        </span>
-                      </td>
-                      <td className="px-4 py-4 text-emerald-400 font-medium">${prod.price}</td>
-                      <td className="px-4 py-4 text-center text-zinc-300">{prod.type === 'physical' ? prod.stock : '—'}</td>
-                      <td className="px-4 py-4 text-center">
-                        <Button 
-                          size="sm" 
-                          onClick={() => iniciarEdicion(prod)}
-                          className="bg-amber-600/20 text-amber-400 hover:bg-amber-600 hover:text-white border border-amber-500/30 text-xs"
-                        >
-                          Editar / Foto
-                        </Button>
-                      </td>
-                    </tr>
-                  ))}
-                  {productos.length === 0 && (
-                    <tr>
-                      <td colSpan={6} className="px-4 py-12 text-center text-zinc-500">
-                        No hay productos registrados aún.
-                      </td>
-                    </tr>
+                {tipo === "physical" && (
+                  <div>
+                    <Label className="text-zinc-400 text-xs ml-1">Stock Disponible</Label>
+                    <Input required type="number" value={stock} onChange={e => setStock(e.target.value)} className="bg-zinc-950 border-none text-white h-12 rounded-xl mt-1 focus:ring-1 focus:ring-amber-500" placeholder="Cantidad" />
+                  </div>
+                )}
+                
+                <div className="bg-zinc-950/50 p-4 rounded-xl border border-zinc-800 border-dashed">
+                  <Label className="text-zinc-400 text-xs mb-2 flex items-center gap-2"><ImageIcon size={14}/> Foto del Ítem</Label>
+                  <input 
+                    type="file" accept="image/*"
+                    onChange={e => { if (e.target.files && e.target.files[0]) setArchivoImagen(e.target.files[0]); }} 
+                    className="w-full text-xs text-zinc-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-bold file:bg-amber-500/10 file:text-amber-500 hover:file:bg-amber-500 hover:file:text-white transition-all cursor-pointer" 
+                  />
+                  {imagenActualUrl && !archivoImagen && (
+                    <div className="mt-4 flex items-center gap-3 bg-zinc-900 p-2 rounded-lg">
+                      <img src={imagenActualUrl} alt="Miniatura" className="w-10 h-10 object-cover rounded-md border border-zinc-700" />
+                      <span className="text-xs text-zinc-400">Foto actual guardada</span>
+                    </div>
                   )}
-                </tbody>
-              </table>
-            </div>
-          </CardContent>
-        </Card>
+                </div>
+
+                <Button type="submit" disabled={cargando} className="w-full bg-amber-600 hover:bg-amber-500 text-white font-bold h-12 rounded-xl shadow-lg transition-all active:scale-95 flex items-center justify-center gap-2">
+                  {cargando ? "Guardando..." : editandoId ? <><Edit2 size={18}/> Actualizar Ítem</> : <><Plus size={18}/> Crear Ítem</>}
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* ================= CATÁLOGO ================= */}
+        <div className="xl:col-span-8 space-y-4">
+          
+          {/* Vista Móvil (Tarjetas) */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:hidden">
+            {productos.map((prod) => (
+              <div key={prod.id} className="bg-zinc-900/60 border border-zinc-800/60 rounded-2xl p-4 flex gap-4 items-center">
+                <div className="w-20 h-20 shrink-0 rounded-xl overflow-hidden bg-zinc-950 border border-zinc-800 flex items-center justify-center">
+                  {prod.image_url ? <img src={prod.image_url} alt={prod.name} className="w-full h-full object-cover" /> : <ImageIcon className="text-zinc-700 w-8 h-8" />}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-bold uppercase mb-1 ${prod.type === 'service' ? 'bg-amber-950 text-amber-400' : 'bg-blue-950 text-blue-400'}`}>
+                    {prod.type === 'service' ? 'Servicio' : 'Físico'}
+                  </span>
+                  <h3 className="font-bold text-zinc-100 text-sm truncate">{prod.name}</h3>
+                  <div className="flex justify-between items-end mt-1">
+                    <div>
+                      <p className="text-lg font-black text-emerald-400">${prod.price}</p>
+                      {prod.type === 'physical' && <p className="text-[10px] text-zinc-500">Stock: {prod.stock}</p>}
+                    </div>
+                    <button onClick={() => iniciarEdicion(prod)} className="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 p-2 rounded-lg transition-colors">
+                      <Edit2 size={16} />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Vista Escritorio (Tabla moderna) */}
+          <div className="hidden md:block bg-zinc-900/60 backdrop-blur-xl border border-zinc-800/60 rounded-3xl overflow-hidden shadow-2xl">
+            <table className="w-full text-sm text-left text-zinc-400">
+              <thead className="text-xs text-zinc-500 uppercase bg-zinc-950/80 border-b border-zinc-800/50">
+                <tr>
+                  <th className="px-6 py-5 font-semibold">Producto / Servicio</th>
+                  <th className="px-6 py-5 font-semibold">Tipo</th>
+                  <th className="px-6 py-5 font-semibold">Precio</th>
+                  <th className="px-6 py-5 font-semibold text-center">Stock</th>
+                  <th className="px-6 py-5 font-semibold text-right">Acciones</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-zinc-800/50">
+                {productos.map((prod) => (
+                  <tr key={prod.id} className="hover:bg-zinc-800/30 transition-colors group">
+                    <td className="px-6 py-4 flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-xl overflow-hidden bg-zinc-950 border border-zinc-800 flex items-center justify-center shrink-0">
+                        {prod.image_url ? <img src={prod.image_url} alt={prod.name} className="w-full h-full object-cover" /> : <ImageIcon className="text-zinc-700 w-5 h-5" />}
+                      </div>
+                      <span className="text-zinc-200 font-bold">{prod.name}</span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className={`flex items-center gap-1.5 w-fit px-2.5 py-1 rounded-md text-[10px] font-bold uppercase ${prod.type === 'service' ? 'bg-amber-500/10 text-amber-500 border border-amber-500/20' : 'bg-blue-500/10 text-blue-400 border border-blue-500/20'}`}>
+                        {prod.type === 'service' ? <><Scissors size={12}/> Servicio</> : <><Box size={12}/> Físico</>}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-emerald-400 font-black">${prod.price}</td>
+                    <td className="px-6 py-4 text-center font-medium">{prod.type === 'physical' ? prod.stock : '—'}</td>
+                    <td className="px-6 py-4 text-right">
+                      <Button size="sm" onClick={() => iniciarEdicion(prod)} className="bg-zinc-800 hover:bg-amber-600 text-zinc-300 hover:text-white rounded-lg transition-all opacity-0 group-hover:opacity-100">
+                        <Edit2 size={16} className="mr-2"/> Editar
+                      </Button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {productos.length === 0 && (
+              <div className="py-20 text-center text-zinc-500">No hay productos registrados aún.</div>
+            )}
+          </div>
+
+        </div>
       </div>
     </div>
   );
