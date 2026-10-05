@@ -5,7 +5,8 @@ import { supabase } from "../../lib/supabase";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import { Card, CardContent } from "../../components/ui/card";
-import { ShoppingCart, Plus, Minus, X, Store, Calendar as CalendarIcon, Search, CheckCircle2 } from "lucide-react";
+// Agregamos el ícono Trash2 a las importaciones
+import { ShoppingCart, Plus, Minus, X, Store, Calendar as CalendarIcon, Search, CheckCircle2, Trash2 } from "lucide-react";
 
 export default function TiendaPublicaPage() {
   const [seccion, setSeccion] = useState<"tienda" | "citas">("tienda");
@@ -58,19 +59,24 @@ export default function TiendaPublicaPage() {
     }
   };
 
-  const modificarCantidad = (id: string, delta: number) => {
-    setCarrito(carrito.map(item => {
-      if (item.id === id) {
-        const nuevaCantidad = item.cantidad + delta;
-        return nuevaCantidad < 1 ? item : { ...item, cantidad: nuevaCantidad };
-      }
-      return item;
-    }));
+  const removerDelCarrito = (id: string) => {
+    const nuevoCarrito = carrito.filter(item => item.id !== id);
+    setCarrito(nuevoCarrito);
+    // Si borramos el último producto en el celular, cerramos la pestaña flotante
+    if (nuevoCarrito.length === 0) setIsCartModalOpen(false); 
   };
 
-  const removerDelCarrito = (id: string) => {
-    setCarrito(carrito.filter(item => item.id !== id));
-    if (carrito.length === 1) setIsCartModalOpen(false);
+  const modificarCantidad = (id: string, delta: number) => {
+    const itemActual = carrito.find(item => item.id === id);
+    
+    // Si la cantidad llega a 0, eliminamos el producto automáticamente
+    if (itemActual && itemActual.cantidad + delta < 1) {
+      removerDelCarrito(id);
+    } else {
+      setCarrito(carrito.map(item => 
+        item.id === id ? { ...item, cantidad: item.cantidad + delta } : item
+      ));
+    }
   };
 
   const totalVenta = carrito.reduce((total, item) => total + (item.price * item.cantidad), 0);
@@ -158,18 +164,28 @@ export default function TiendaPublicaPage() {
         ) : (
           carrito.map((item) => (
             <div key={item.id} className="flex justify-between items-center bg-zinc-950/50 p-3 rounded-2xl border border-zinc-800/50">
-              <div className="flex-1">
+              <div className="flex-1 pr-2">
                 <p className="text-sm font-bold text-zinc-200 line-clamp-1">{item.name}</p>
                 <p className="text-xs text-emerald-400 font-medium">${(item.cantidad * item.price).toFixed(2)}</p>
               </div>
-              <div className="flex items-center gap-3 bg-zinc-900 rounded-full px-2 py-1 border border-zinc-800">
-                <button onClick={() => modificarCantidad(item.id, -1)} className="text-zinc-400 hover:text-white p-1">
-                  <Minus size={14} />
+              <div className="flex items-center gap-2">
+                {/* BOTÓN BASURERO NUEVO */}
+                <button 
+                  onClick={() => removerDelCarrito(item.id)} 
+                  className="bg-red-500/10 text-red-500 hover:bg-red-500/20 p-1.5 rounded-full transition-colors"
+                >
+                  <Trash2 size={16} />
                 </button>
-                <span className="text-sm font-bold w-4 text-center">{item.cantidad}</span>
-                <button onClick={() => modificarCantidad(item.id, 1)} className="text-zinc-400 hover:text-white p-1">
-                  <Plus size={14} />
-                </button>
+                
+                <div className="flex items-center gap-2 bg-zinc-900 rounded-full px-2 py-1 border border-zinc-800">
+                  <button onClick={() => modificarCantidad(item.id, -1)} className="text-zinc-400 hover:text-white p-1">
+                    <Minus size={14} />
+                  </button>
+                  <span className="text-sm font-bold w-4 text-center">{item.cantidad}</span>
+                  <button onClick={() => modificarCantidad(item.id, 1)} className="text-zinc-400 hover:text-white p-1">
+                    <Plus size={14} />
+                  </button>
+                </div>
               </div>
             </div>
           ))
@@ -263,10 +279,10 @@ export default function TiendaPublicaPage() {
                         
                         <div className="mt-3 flex items-center justify-between">
                           {enCarrito ? (
-                            <div className="flex items-center gap-3 bg-zinc-950 rounded-full px-2 py-1 border border-zinc-800">
-                              <button onClick={() => modificarCantidad(prod.id, -1)} className="text-zinc-400 p-1"><Minus size={14}/></button>
-                              <span className="text-sm font-bold w-4 text-center">{enCarrito.cantidad}</span>
-                              <button onClick={() => modificarCantidad(prod.id, 1)} className="text-zinc-400 p-1"><Plus size={14}/></button>
+                            <div className="flex items-center gap-2">
+                               <span className="bg-emerald-500/10 text-emerald-500 px-3 py-1 rounded-full text-xs font-bold border border-emerald-500/20">
+                                 Agregado ({enCarrito.cantidad})
+                               </span>
                             </div>
                           ) : (
                             <button 
@@ -313,7 +329,7 @@ export default function TiendaPublicaPage() {
                         className={`p-4 rounded-2xl border-2 text-center cursor-pointer transition-all duration-300 ${barberoElegido?.id === b.id ? 'bg-amber-500/10 border-amber-500 text-amber-500' : 'bg-zinc-950 border-transparent text-zinc-400 hover:bg-zinc-900'}`}
                       >
                         <div className="w-12 h-12 mx-auto bg-zinc-800 rounded-full mb-2 overflow-hidden flex items-center justify-center">
-                           <span className="text-xl">🧔🏻‍♂️</span>
+                           <span className="text-xl">🧔🏻‍♂️️</span>
                         </div>
                         <span className="font-bold text-sm block">{b.name}</span>
                       </div>
