@@ -5,7 +5,6 @@ import { supabase } from "../../lib/supabase";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import { Card, CardContent } from "../../components/ui/card";
-// Agregamos el ícono Trash2 a las importaciones
 import { ShoppingCart, Plus, Minus, X, Store, Calendar as CalendarIcon, Search, CheckCircle2, Trash2 } from "lucide-react";
 
 export default function TiendaPublicaPage() {
@@ -62,14 +61,11 @@ export default function TiendaPublicaPage() {
   const removerDelCarrito = (id: string) => {
     const nuevoCarrito = carrito.filter(item => item.id !== id);
     setCarrito(nuevoCarrito);
-    // Si borramos el último producto en el celular, cerramos la pestaña flotante
     if (nuevoCarrito.length === 0) setIsCartModalOpen(false); 
   };
 
   const modificarCantidad = (id: string, delta: number) => {
     const itemActual = carrito.find(item => item.id === id);
-    
-    // Si la cantidad llega a 0, eliminamos el producto automáticamente
     if (itemActual && itemActual.cantidad + delta < 1) {
       removerDelCarrito(id);
     } else {
@@ -137,7 +133,20 @@ export default function TiendaPublicaPage() {
 
   const productosFiltrados = productos.filter(p => p.name.toLowerCase().includes(busqueda.toLowerCase()));
 
-  // Componente reutilizable del Carrito (Para usarlo en Desktop y en el Modal de Celular)
+  // ==========================================
+  // FUNCIÓN INTELIGENTE PARA ASIGNAR EMOJI
+  // ==========================================
+  const obtenerEmojiBarbero = (nombre: string) => {
+    // Normalizamos el nombre para evitar problemas si lo escribes con tilde ("Andrés" o "Andres")
+    const n = (nombre || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    
+    if (n.includes("andres")) {
+      return "👦🏻"; // Andrés va sin barba
+    }
+    return "🧔🏻‍♂️"; // Carlos y cualquier otro barbero nuevo irán con barba por defecto
+  };
+
+  // Componente reutilizable del Carrito
   const RenderCarritoUI = () => (
     <div className="flex flex-col h-full">
       <h2 className="text-xl font-bold text-zinc-100 mb-6 flex items-center gap-2">
@@ -169,7 +178,6 @@ export default function TiendaPublicaPage() {
                 <p className="text-xs text-emerald-400 font-medium">${(item.cantidad * item.price).toFixed(2)}</p>
               </div>
               <div className="flex items-center gap-2">
-                {/* BOTÓN BASURERO NUEVO */}
                 <button 
                   onClick={() => removerDelCarrito(item.id)} 
                   className="bg-red-500/10 text-red-500 hover:bg-red-500/20 p-1.5 rounded-full transition-colors"
@@ -211,7 +219,6 @@ export default function TiendaPublicaPage() {
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100 font-sans pb-24 md:pb-8 selection:bg-amber-500/30">
       
-      {/* ================= HEADER STICKY ================= */}
       <header className="sticky top-0 z-30 bg-zinc-950/80 backdrop-blur-xl border-b border-zinc-900/50 pt-4 pb-4 px-4 md:px-8 shadow-sm">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
           <div className="text-center md:text-left">
@@ -219,7 +226,6 @@ export default function TiendaPublicaPage() {
             <p className="text-zinc-500 text-xs tracking-widest uppercase mt-0.5 font-medium">Tienda & Reservas</p>
           </div>
           
-          {/* Segmented Control (Pestañas nativas) */}
           <div className="flex bg-zinc-900 p-1.5 rounded-2xl border border-zinc-800 w-full md:w-auto shadow-inner">
             <button 
               onClick={() => setSeccion("tienda")}
@@ -239,11 +245,8 @@ export default function TiendaPublicaPage() {
 
       <main className="max-w-7xl mx-auto p-4 md:p-8 mt-4">
         
-        {/* ================= SECCIÓN 1: TIENDA ================= */}
         {seccion === "tienda" && (
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-            
-            {/* Lista de Productos */}
             <div className="lg:col-span-8 space-y-6">
               <div className="relative">
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500" size={20} />
@@ -260,7 +263,6 @@ export default function TiendaPublicaPage() {
                   const enCarrito = carrito.find(item => item.id === prod.id);
                   return (
                     <div key={prod.id} className="group relative bg-zinc-900/40 border border-zinc-800/60 rounded-3xl p-4 flex gap-4 items-center hover:bg-zinc-900 transition-all overflow-hidden">
-                      {/* Imagen con diseño moderno */}
                       <div className="relative w-24 h-24 shrink-0 rounded-2xl overflow-hidden bg-zinc-950 border border-zinc-800/50 shadow-inner">
                         {prod.image_url ? (
                           <img src={prod.image_url} alt={prod.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
@@ -272,7 +274,6 @@ export default function TiendaPublicaPage() {
                         )}
                       </div>
                       
-                      {/* Info del producto */}
                       <div className="flex-1 py-1">
                         <h3 className="font-bold text-zinc-100 text-sm leading-tight pr-2">{prod.name}</h3>
                         <p className="text-xl font-black text-emerald-400 mt-2">${prod.price}</p>
@@ -300,7 +301,6 @@ export default function TiendaPublicaPage() {
               </div>
             </div>
 
-            {/* Carrito en Desktop (Se oculta en celular) */}
             <div className="hidden lg:block lg:col-span-4">
               <div className="sticky top-28 bg-zinc-900/40 backdrop-blur-md border border-zinc-800/60 rounded-3xl p-6 h-[calc(100vh-140px)] shadow-2xl">
                 <RenderCarritoUI />
@@ -309,13 +309,11 @@ export default function TiendaPublicaPage() {
           </div>
         )}
 
-        {/* ================= SECCIÓN 2: CITAS ================= */}
         {seccion === "citas" && (
           <div className="max-w-xl mx-auto">
             <Card className="bg-zinc-900/40 backdrop-blur-md border-zinc-800/60 shadow-2xl rounded-3xl overflow-hidden">
               <CardContent className="p-6 md:p-8 space-y-8">
                 
-                {/* Paso 1 */}
                 <div className="space-y-3">
                   <div className="flex items-center gap-2">
                     <span className="bg-amber-500 text-zinc-950 w-6 h-6 rounded-full flex items-center justify-center font-black text-xs">1</span>
@@ -329,7 +327,7 @@ export default function TiendaPublicaPage() {
                         className={`p-4 rounded-2xl border-2 text-center cursor-pointer transition-all duration-300 ${barberoElegido?.id === b.id ? 'bg-amber-500/10 border-amber-500 text-amber-500' : 'bg-zinc-950 border-transparent text-zinc-400 hover:bg-zinc-900'}`}
                       >
                         <div className="w-12 h-12 mx-auto bg-zinc-800 rounded-full mb-2 overflow-hidden flex items-center justify-center">
-                           <span className="text-xl">🧔🏻‍♂️️</span>
+                           <span className="text-2xl">{obtenerEmojiBarbero(b.name)}</span>
                         </div>
                         <span className="font-bold text-sm block">{b.name}</span>
                       </div>
@@ -337,7 +335,6 @@ export default function TiendaPublicaPage() {
                   </div>
                 </div>
 
-                {/* Paso 2 */}
                 <div className="space-y-3">
                   <div className="flex items-center gap-2">
                     <span className="bg-amber-500 text-zinc-950 w-6 h-6 rounded-full flex items-center justify-center font-black text-xs">2</span>
@@ -397,7 +394,6 @@ export default function TiendaPublicaPage() {
         )}
       </main>
 
-      {/* ================= BOTÓN FLOTANTE DEL CARRITO (Solo Celulares) ================= */}
       {seccion === "tienda" && cantidadItemsCarrito > 0 && (
         <button 
           onClick={() => setIsCartModalOpen(true)}
@@ -410,18 +406,15 @@ export default function TiendaPublicaPage() {
         </button>
       )}
 
-      {/* ================= MODAL DEL CARRITO (Solo Celulares) ================= */}
       {isCartModalOpen && (
         <div className="lg:hidden fixed inset-0 z-50 flex justify-end bg-zinc-950/80 backdrop-blur-sm animate-in fade-in duration-300">
           <div className="w-full max-w-sm bg-zinc-900 h-full shadow-2xl animate-in slide-in-from-right duration-300 flex flex-col relative">
-            
             <button 
               onClick={() => setIsCartModalOpen(false)}
               className="absolute top-4 right-4 p-2 bg-zinc-800 rounded-full text-zinc-400 hover:text-white"
             >
               <X size={20} />
             </button>
-            
             <div className="flex-1 overflow-y-auto p-6 pt-12">
               <RenderCarritoUI />
             </div>
